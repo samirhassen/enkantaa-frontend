@@ -1,0 +1,12 @@
+version: "3.3"
+
+services:
+  con-edison-frontend:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: con-edison-frontend:latest
+    container_name: con-edison-frontend-container
+    restart: unless-stopped
+    ports:
+      - 9898:9898

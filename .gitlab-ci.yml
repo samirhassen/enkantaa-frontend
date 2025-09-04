@@ -1,0 +1,101 @@
+image: docker:latest
+
+variables:
+  GIT_CLEAN_FLAGS: none
+
+services:
+  - docker:dind
+
+stages:
+  - setup
+  - build
+  - deploy
+  - clean
+
+step-setup-production:
+  stage: setup
+  before_script:
+    - export DYNAMIC_ENV_VAR=STAGING
+  only:
+    - main
+  tags:
+    - con-edison-frontend-ekantaa
+  script:
+    - sudo touch .env
+    - sudo chmod a+rwx ./.env
+    - sudo echo VITE_API_BASE_URL=$VITE_API_BASE_URL_MAIN >> .env
+    - sudo docker image prune -f
+
+step-build-production:
+  stage: build
+  only:
+    - main
+  tags:
+    - con-edison-frontend-ekantaa
+  script:
+    - sudo docker compose build
+
+step-deploy-production:
+  stage: deploy
+  only:
+    - main
+  tags:
+    - con-edison-frontend-ekantaa
+  script:
+    - sudo docker compose down --remove-orphans
+    - sudo docker compose up -d
+
+step-clean-production:
+  stage: clean
+  only:
+    - main
+  tags:
+    - con-edison-frontend-ekantaa
+  script:
+    - echo cleaning $DYNAMIC_ENV_VAR
+    - sudo docker system prune -f
+    - sudo docker volume prune -f
+
+step-setup-staging:
+  stage: setup
+  before_script:
+    - export DYNAMIC_ENV_VAR=STAGING
+  only:
+    - staging
+  tags:
+    - con-edison-frontend
+  script:
+    - sudo touch .env
+    - sudo chmod a+rwx ./.env
+    - sudo echo VITE_API_BASE_URL=$VITE_API_BASE_URL >> .env
+    - sudo docker image prune -f
+
+step-build-staging:
+  stage: build
+  only:
+    - staging
+  tags:
+    - con-edison-frontend
+  script:
+    - sudo docker-compose build
+
+step-deploy-staging:
+  stage: deploy
+  only:
+    - staging
+  tags:
+    - con-edison-frontend
+  script:
+    - sudo docker-compose down --remove-orphans
+    - sudo docker-compose up -d
+
+step-clean-staging:
+  stage: clean
+  only:
+    - staging
+  tags:
+    - con-edison-frontend
+  script:
+    - echo cleaning $DYNAMIC_ENV_VAR
+    - sudo docker system prune -f
+    - sudo docker volume prune -f
