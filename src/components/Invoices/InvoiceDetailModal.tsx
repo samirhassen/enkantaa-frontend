@@ -6,7 +6,6 @@ import {
   Typography,
   Box,
   Grid,
-  Divider,
   CircularProgress,
   Alert,
   Chip,
@@ -23,7 +22,8 @@ import {
   Download,
 } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "../../hooks/redux";
-import { invoicesActions } from "../../store/slices/invoicesSlice";
+import { selectInvoicesDetail } from "../../store/slices/invoices/selector";
+import { invoicesActions } from "../../store/slices/invoices";
 
 const StyledDialog = styled(Dialog)`
   & .MuiDialog-paper {
@@ -141,7 +141,7 @@ const InvoiceDetailModal: React.FC = () => {
     selectedInvoice,
     selectedInvoiceLoading,
     selectedInvoiceError,
-  } = useAppSelector((state) => state.invoices);
+  } = useAppSelector(selectInvoicesDetail);
 
   const [isDownloading, setIsDownloading] = React.useState(false);
 

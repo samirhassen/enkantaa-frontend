@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Formik, Form, Field } from 'formik';
-import * as Yup from 'yup';
+import React from "react";
+import { Formik, Form } from "formik";
+import * as Yup from "yup";
 import {
   Container,
   Paper,
@@ -10,13 +10,15 @@ import {
   Box,
   Alert,
   CircularProgress,
-  Avatar,
   FormHelperText,
-} from '@mui/material';
-import  styled  from '@emotion/styled';
-import { Zap } from 'lucide-react';
-import { useAppDispatch, useAppSelector } from '../hooks/redux';
-import { authActions } from '../store/slices/authSlice';
+} from "@mui/material";
+import styled from "@emotion/styled";
+import { useAppDispatch, useAppSelector } from "../hooks/redux";
+import { authActions } from "../store/slices/auth";
+import {
+  selectAuthLoading,
+  selectAuthError,
+} from "../store/slices/auth/selector";
 
 const LoginContainer = styled(Container)`
   min-height: 100vh;
@@ -25,18 +27,29 @@ const LoginContainer = styled(Container)`
   justify-content: center;
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   position: relative;
-  
+
   &::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: 
-      radial-gradient(circle at 20% 80%, rgba(0, 163, 224, 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, rgba(2, 136, 209, 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 40% 40%, rgba(0, 163, 224, 0.05) 0%, transparent 50%);
+    background: radial-gradient(
+        circle at 20% 80%,
+        rgba(0, 163, 224, 0.1) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 80% 20%,
+        rgba(2, 136, 209, 0.1) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 40% 40%,
+        rgba(0, 163, 224, 0.05) 0%,
+        transparent 50%
+      );
     pointer-events: none;
   }
 `;
@@ -56,11 +69,11 @@ const LoginPaper = styled(Paper)`
 
 const validationSchema = Yup.object({
   name: Yup.string()
-    .min(4, 'Username must be at least 4 characters')
-    .required('Username is required'),
+    .min(4, "Username must be at least 4 characters")
+    .required("Username is required"),
   password: Yup.string()
-    .min(6, 'Password must be at least 6 characters')
-    .required('Password is required'),
+    .min(6, "Password must be at least 6 characters")
+    .required("Password is required"),
 });
 
 const LogoContainer = styled(Box)`
@@ -68,7 +81,7 @@ const LogoContainer = styled(Box)`
   align-items: center;
   justify-content: center;
   margin-bottom: 32px;
-  
+
   img {
     height: 48px;
     width: auto;
@@ -77,7 +90,8 @@ const LogoContainer = styled(Box)`
 
 const LoginPage: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { loading, error } = useAppSelector((state) => state.auth);
+  const loading = useAppSelector(selectAuthLoading);
+  const error = useAppSelector(selectAuthError);
 
   const handleSubmit = (values: { name: string; password: string }) => {
     dispatch(authActions.login(values));
@@ -91,20 +105,25 @@ const LoginPage: React.FC = () => {
     <LoginContainer maxWidth={false}>
       <LoginPaper elevation={0}>
         <LogoContainer>
-          <img src="/image.png" alt="ConEdison" />
+          <img src="/image.png" alt="Ekaanta" />
         </LogoContainer>
-        
+
         <Box textAlign="center" mb={4}>
-          <Typography variant="h5" color="primary" gutterBottom sx={{ fontWeight: 700 }}>
+          <Typography
+            variant="h5"
+            color="primary"
+            gutterBottom
+            sx={{ fontWeight: 700 }}
+          >
             Invoice Dashboard
           </Typography>
-          <Typography 
-            variant="body2" 
-            sx={{ 
+          <Typography
+            variant="body2"
+            sx={{
               fontWeight: 500,
-              color: '#4a5568',
-              fontSize: '0.95rem',
-              opacity: 0.9
+              color: "#4a5568",
+              fontSize: "0.95rem",
+              opacity: 0.9,
             }}
           >
             Access your electric utility data
@@ -118,11 +137,11 @@ const LoginPage: React.FC = () => {
         )}
 
         <Formik
-          initialValues={{ name: '', password: '' }}
+          initialValues={{ name: "", password: "" }}
           validationSchema={validationSchema}
           onSubmit={handleSubmit}
         >
-          {({ values, errors, touched, handleChange, handleBlur, isValid }) => (
+          {({ values, errors, touched, handleChange, handleBlur }) => (
             <Form>
               <Box mb={2}>
                 <TextField
@@ -137,28 +156,28 @@ const LoginPage: React.FC = () => {
                   size="small"
                   error={touched.name && Boolean(errors.name)}
                   sx={{
-                    '& .MuiOutlinedInput-root.Mui-error': {
-                      '& fieldset': {
-                        borderColor: '#d32f2f',
+                    "& .MuiOutlinedInput-root.Mui-error": {
+                      "& fieldset": {
+                        borderColor: "#d32f2f",
                       },
                     },
                   }}
                 />
                 {touched.name && errors.name && (
-                  <FormHelperText 
-                    error 
-                    sx={{ 
-                      ml: 0, 
-                      mt: 0.5, 
-                      fontSize: '0.75rem',
-                      fontWeight: 500 
+                  <FormHelperText
+                    error
+                    sx={{
+                      ml: 0,
+                      mt: 0.5,
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
                     }}
                   >
                     {errors.name}
                   </FormHelperText>
                 )}
               </Box>
-              
+
               <Box mb={3}>
                 <TextField
                   fullWidth
@@ -173,21 +192,21 @@ const LoginPage: React.FC = () => {
                   size="small"
                   error={touched.password && Boolean(errors.password)}
                   sx={{
-                    '& .MuiOutlinedInput-root.Mui-error': {
-                      '& fieldset': {
-                        borderColor: '#d32f2f',
+                    "& .MuiOutlinedInput-root.Mui-error": {
+                      "& fieldset": {
+                        borderColor: "#d32f2f",
                       },
                     },
                   }}
                 />
                 {touched.password && errors.password && (
-                  <FormHelperText 
-                    error 
-                    sx={{ 
-                      ml: 0, 
-                      mt: 0.5, 
-                      fontSize: '0.75rem',
-                      fontWeight: 500 
+                  <FormHelperText
+                    error
+                    sx={{
+                      ml: 0,
+                      mt: 0.5,
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
                     }}
                   >
                     {errors.password}
@@ -201,17 +220,18 @@ const LoginPage: React.FC = () => {
                 variant="contained"
                 size="medium"
                 disabled={loading}
-                sx={{ 
-                  height: '44px',
-                  background: 'linear-gradient(135deg, #00A3E0 0%, #0288D1 100%)',
+                sx={{
+                  height: "44px",
+                  background:
+                    "linear-gradient(135deg, #00A3E0 0%, #0288D1 100%)",
                   fontWeight: 600,
-                  fontSize: '0.9rem',
+                  fontSize: "0.9rem",
                 }}
               >
                 {loading ? (
                   <CircularProgress size={24} color="inherit" />
                 ) : (
-                  'Access Dashboard'
+                  "Access Dashboard"
                 )}
               </Button>
             </Form>

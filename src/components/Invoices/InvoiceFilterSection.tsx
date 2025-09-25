@@ -1,18 +1,19 @@
-import React, { useState, useEffect } from "react";
-import {
-  Box,
-  Autocomplete,
-  TextField,
-  Paper,
-  Typography,
-  CircularProgress,
-  IconButton,
-  Tooltip,
-} from "@mui/material";
+import React, { useState, useEffect, useMemo } from "react";
+import { Box, Paper, Typography, IconButton, Tooltip } from "@mui/material";
+import Autocomplete from "../CoreComponents/Autocomplete";
+import DateRange from "../CoreComponents/DateRange";
 import styled from "@emotion/styled";
 import { RotateCcw, Filter } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "../../hooks/redux";
-import { invoicesActions } from "../../store/slices/invoicesSlice";
+import { invoicesActions } from "../../store/slices/invoices";
+import {
+  selectInvoiceClients,
+  selectInvoiceClientsLoading,
+  selectSelectedClientId,
+  selectItemsPerPage,
+  selectFilterEndDate,
+  selectFilterStartDate,
+} from "../../store/slices/invoices/selector";
 import { Client } from "../../types";
 
 const FilterPaper = styled(Paper)`
@@ -47,60 +48,86 @@ const FilterControls = styled(Box)`
   gap: 12px;
   flex-wrap: wrap;
   align-items: center;
-  max-width: 500px;
 `;
 
 const InvoiceFilterSection: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { 
-    clients, 
-    clientsLoading, 
-    selectedClientId,
-    currentPage,
-    itemsPerPage 
-  } = useAppSelector((state) => state.invoices);
+  const clients = useAppSelector(selectInvoiceClients);
+  const clientsLoading = useAppSelector(selectInvoiceClientsLoading);
+  const selectedClientId = useAppSelector(selectSelectedClientId);
+  const startDate = useAppSelector(selectFilterStartDate);
+  const endDate = useAppSelector(selectFilterEndDate);
+  const itemsPerPage = useAppSelector(selectItemsPerPage);
 
   const [clientSearch, setClientSearch] = useState("");
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
   useEffect(() => {
-    dispatch(invoicesActions.fetchInvoiceClients(""));
+    dispatch(invoicesActions.fetchInvoiceClients({}));
   }, [dispatch]);
 
-  useEffect(() => {
-    // Update selected client when selectedClientId changes
-    const client = clients.find(c => c._id === selectedClientId);
-    setSelectedClient(client || null);
-  }, [selectedClientId, clients]);
+  const selectedClient = useMemo(
+    () => clients.find((c) => c._id === selectedClientId) || null,
+    [selectedClientId]
+  );
 
-  const handleClientChange = (event: any, newValue: Client | null) => {
-    setSelectedClient(newValue);
-    const clientId = newValue?._id || "";
-    
-    dispatch(invoicesActions.setSelectedClientId(clientId));
-    
-    // Fetch invoices with the new filter
-    dispatch(invoicesActions.fetchInvoices({ 
-      page: 1, 
-      perPage: itemsPerPage,
-      clientId 
-    }));
+  const handleClientChange = (
+    _event: React.SyntheticEvent,
+    newValue: Client | null
+  ) => {
+    const client = newValue?._id || "";
+
+    dispatch(invoicesActions.setSelectedClientId(client));
+
+    dispatch(
+      invoicesActions.fetchInvoices({
+        page: 1,
+        perPage: itemsPerPage,
+        client,
+      })
+    );
   };
 
-  const handleClientInputChange = (event: any, newInputValue: string) => {
+  const handleClientInputChange = (
+    _event: React.SyntheticEvent,
+    newInputValue: string
+  ) => {
     setClientSearch(newInputValue);
-    dispatch(invoicesActions.fetchInvoiceClients(newInputValue));
+    dispatch(invoicesActions.fetchInvoiceClients({ client: newInputValue }));
+  };
+
+  const handleDateRangeChange = (value: {
+    from?: Date | null;
+    to?: Date | null;
+  }) => {
+    dispatch(
+      invoicesActions.setFilterDates({
+        startDate: value.from ?? undefined,
+        endDate: value.to ?? undefined,
+      })
+    );
+
+    // fetch invoices for new date range
+    dispatch(
+      invoicesActions.fetchInvoices({
+        page: 1,
+        perPage: itemsPerPage,
+      })
+    );
   };
 
   const handleReset = () => {
-    setSelectedClient(null);
+    // clear selection via redux
     setClientSearch("");
     dispatch(invoicesActions.resetInvoiceFilters());
-    dispatch(invoicesActions.fetchInvoiceClients(""));
-    dispatch(invoicesActions.fetchInvoices({ 
-      page: 1, 
-      perPage: itemsPerPage 
-    }));
+    // reset selected client id to initial (empty) value
+    dispatch(invoicesActions.setSelectedClientId(""));
+    dispatch(invoicesActions.fetchInvoiceClients({}));
+    dispatch(
+      invoicesActions.fetchInvoices({
+        page: 1,
+        perPage: itemsPerPage,
+      })
+    );
   };
 
   return (
@@ -116,77 +143,32 @@ const InvoiceFilterSection: React.FC = () => {
             letterSpacing: "-0.01em",
           }}
         >
-          Filter Invoices
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{
-            ml: 2,
-            color: "#64748b",
-            fontWeight: 500,
-            fontSize: "0.8rem",
-            fontStyle: "italic",
-          }}
-        >
-          Filter invoices by client
+          Filter Documents
         </Typography>
       </FilterHeader>
 
       <FilterControls>
         <Autocomplete
-          sx={{
-            minWidth: 250,
-            width: 300,
-            "& .MuiOutlinedInput-root": {
-              backgroundColor: "rgba(255, 255, 255, 0.8)",
-              transition: "all 0.2s ease",
-              "&:hover": {
-                backgroundColor: "rgba(255, 255, 255, 1)",
-                "& fieldset": {
-                  borderColor: "rgba(0, 163, 224, 0.4)",
-                },
-              },
-              "&.Mui-focused": {
-                backgroundColor: "rgba(255, 255, 255, 1)",
-                "& fieldset": {
-                  borderColor: "#00A3E0",
-                  borderWidth: "2px",
-                },
-              },
-            },
-          }}
+          ContainerProps={{ flex: "none" }}
+          sx={{ minWidth: 250, width: 300 }}
           options={clients}
-          getOptionLabel={(option) => option.name}
+          getOptionLabel={(option) => (option as Client).name}
           value={selectedClient}
-          onChange={handleClientChange}
-          onInputChange={handleClientInputChange}
+          onChange={(_e, v) => handleClientChange(_e, v as Client | null)}
+          onInputChange={(_e, v) => handleClientInputChange(_e, v)}
           inputValue={clientSearch}
           loading={clientsLoading}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Select Client"
-              variant="outlined"
-              size="small"
-              sx={{
-                "& .MuiInputLabel-root": {
-                  fontWeight: 500,
-                  color: "#4a5568",
-                },
-              }}
-              InputProps={{
-                ...params.InputProps,
-                endAdornment: (
-                  <>
-                    {clientsLoading ? (
-                      <CircularProgress color="inherit" size={20} />
-                    ) : null}
-                    {params.InputProps.endAdornment}
-                  </>
-                ),
-              }}
-            />
-          )}
+          label="Select Client"
+        />
+
+        <DateRange
+          value={{ from: startDate, to: endDate }}
+          onReset={() =>
+            handleDateRangeChange({ from: undefined, to: undefined })
+          }
+          endProps={{ disableFuture: true }}
+          startProps={{ disableFuture: true }}
+          onChange={handleDateRangeChange}
         />
 
         <Tooltip title="Reset filters" arrow placement="top">

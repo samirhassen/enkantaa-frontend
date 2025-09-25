@@ -1,14 +1,7 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { LoginCredentials } from '../../types';
-
-interface AuthState {
-  isAuthenticated: boolean;
-  token: string | null;
-  user: { name: string } | null;
-  loading: boolean;
-  error: string | null;
-  initializing: boolean;
-}
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import type { AuthState } from "./types";
+import { LoginCredentials } from "../../../types";
 
 const initialState: AuthState = {
   isAuthenticated: false,
@@ -19,26 +12,32 @@ const initialState: AuthState = {
   initializing: true,
 };
 
-const authSlice = createSlice({
-  name: 'auth',
+const auth = createSlice({
+  name: "auth",
   initialState,
   reducers: {
-    login: (state, action: PayloadAction<LoginCredentials>) => {
+    login: (state, _action: PayloadAction<LoginCredentials>) => {
       state.error = null;
+      state.loading = true;
     },
-    loginSuccess: (state, action: PayloadAction<{ token: string; user: { name: string } }>) => {
+    loginSuccess: (
+      state,
+      action: PayloadAction<{ token: string; user: { name: string } }>
+    ) => {
       state.isAuthenticated = true;
       state.token = action.payload.token;
       state.user = action.payload.user;
       state.error = null;
+      state.loading = false;
     },
     loginFailure: (state, action: PayloadAction<string>) => {
       state.isAuthenticated = false;
       state.token = null;
       state.user = null;
       state.error = action.payload;
+      state.loading = false;
     },
-    logout: (state) => {
+    logout: () => {
       // Saga will handle the actual logout
     },
     logoutSuccess: (state) => {
@@ -68,5 +67,5 @@ const authSlice = createSlice({
   },
 });
 
-export const authActions = authSlice.actions;
-export default authSlice.reducer;
+export const authActions = auth.actions;
+export default auth.reducer;

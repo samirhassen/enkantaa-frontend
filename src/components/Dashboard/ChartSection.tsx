@@ -1,17 +1,10 @@
-import React, { useMemo } from 'react';
-import {
-  Paper,
-  Typography,
-  Box,
-  CircularProgress,
-  Alert,
-  Skeleton,
-} from '@mui/material';
-import  styled  from '@emotion/styled';
-import Chart from 'react-apexcharts';
-import { ApexOptions } from 'apexcharts';
-import { useAppSelector } from '../../hooks/redux';
-import { ChartDataPoint } from '../../types';
+import React, { useCallback, useMemo } from "react";
+import { Paper, Typography, Box, Alert, Skeleton } from "@mui/material";
+import styled from "@emotion/styled";
+import Chart from "react-apexcharts";
+import { ApexOptions } from "apexcharts";
+import { useAppSelector } from "../../hooks/redux";
+import { selectDashboardChart } from "../../store/slices/dashboard/selector";
 
 const ChartPaper = styled(Paper)`
   padding: 20px;
@@ -22,7 +15,7 @@ const ChartPaper = styled(Paper)`
   border: 2px solid rgba(0, 163, 224, 0.15);
   box-shadow: 0 4px 20px rgba(0, 163, 224, 0.06);
   transition: all 0.3s ease;
-  
+
   &:hover {
     box-shadow: 0 8px 32px rgba(0, 163, 224, 0.12);
     border-color: rgba(0, 163, 224, 0.25);
@@ -36,163 +29,142 @@ const ChartSkeleton = styled(Box)`
   padding: 20px;
 `;
 const ChartSection: React.FC = () => {
-  const { chartData, chartLoading, chartError } = useAppSelector(
-    (state) => state.dashboard
-  );
+  const { chartData, chartLoading, chartError } =
+    useAppSelector(selectDashboardChart);
 
   const processedData = useMemo(() => {
     if (!chartData.length) return null;
 
     // Sort data by date and process
-    const sortedData = [...chartData].sort((a, b) => 
-      new Date(a.date).getTime() - new Date(b.date).getTime()
+    const sortedData = [...chartData].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
     return {
-      categories: sortedData.map(item => {
+      categories: sortedData.map((item) => {
         const date = new Date(item.date);
-        return date.toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'short' 
+        return date.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
         });
       }),
-      totalElectricCost: sortedData.map(item => Math.round(item.totalElectricCostCumulative)),
-      totalSupplyCost: sortedData.map(item => Math.round(item.totalSupplyCostCumulative)),
-      totalDeliveryCost: sortedData.map(item => Math.round(item.totalDeliveryCostCumulative)),
+      totalElectricCost: sortedData.map((item) =>
+        Math.round(item.totalElectricCostCumulative)
+      ),
+      totalSupplyCost: sortedData.map((item) =>
+        Math.round(item.totalSupplyCostCumulative)
+      ),
+      totalDeliveryCost: sortedData.map((item) =>
+        Math.round(item.totalDeliveryCostCumulative)
+      ),
+      // New series for demand and energy usage
+      totalDemandPrimary: sortedData.map((item) =>
+        Math.round(item.totalDemandPrimary)
+      ),
+      totalEnergyUsage: sortedData.map((item) =>
+        Math.round(item.totalEnergyUsage)
+      ),
     };
   }, [chartData]);
 
-  const chartOptions: ApexOptions = useMemo(() => ({
-    chart: {
-      type: 'line',
-      height: 400,
-      toolbar: {
+  const chartOptions: ApexOptions = useMemo(
+    () => ({
+      chart: {
+        type: "bar",
+        height: 400,
+        toolbar: {
+          show: true,
+          tools: {
+            download: true,
+            selection: true,
+            zoom: true,
+            zoomin: true,
+            zoomout: true,
+            pan: true,
+            reset: true,
+          },
+        },
+        animations: {
+          enabled: true,
+          easing: "easeinout",
+          speed: 800,
+        },
+        fontFamily: "Quicksand, sans-serif",
+      },
+      plotOptions: {
+        bar: {
+          horizontal: false,
+          columnWidth: "55%",
+          borderRadius: 6,
+        },
+      },
+      stroke: {
         show: true,
-        tools: {
-          download: true,
-          selection: true,
-          zoom: true,
-          zoomin: true,
-          zoomout: true,
-          pan: true,
-          reset: true,
-        },
+        width: 0,
       },
-      animations: {
-        enabled: true,
-        easing: 'easeinout',
-        speed: 800,
+      fill: {
+        type: "solid",
+        opacity: 1,
       },
-      fontFamily: 'Quicksand, sans-serif',
-    },
-    stroke: {
-      width: [3, 3, 3],
-      curve: 'smooth',
-    },
-    plotOptions: {
-      bar: {
-        columnWidth: '50%',
-        dataLabels: {
-          position: 'top',
-        },
-        borderRadius: 4,
+      markers: { size: 0 },
+      colors: ["#42A5F5", "#66BB6A"],
+      dataLabels: {
+        enabled: false,
       },
-    },
-    fill: {
-      type: ['gradient', 'gradient', 'gradient'],
-      gradient: {
-        shade: 'light',
-        type: 'vertical',
-        shadeIntensity: 0.25,
-        gradientToColors: ['#81C784', '#FFB74D', '#64B5F6'],
-        inverseColors: false,
-        opacityFrom: 0.8,
-        opacityTo: 0.3,
+      legend: {
+        show: true,
+        position: "top",
+        horizontalAlign: "left",
+        offsetX: 40,
+        fontFamily: "Quicksand",
+        fontWeight: 500,
       },
-    },
-    colors: ['#00A3E0', '#F8BBD9', '#C5CAE9'],
-    colors: ['#66BB6A', '#FFA726', '#42A5F5'],
-    dataLabels: {
-      enabled: false,
-    },
-    legend: {
-      show: true,
-      position: 'top',
-      horizontalAlign: 'left',
-      offsetX: 40,
-      fontFamily: 'Quicksand',
-      fontWeight: 500,
-    },
-    xaxis: {
-      categories: processedData?.categories || [],
-      title: {
-        text: 'Month',
-        style: {
-          colors: '#FFB366',
-          fontSize: '14px',
-          fontWeight: 500,
-          fontFamily: 'Quicksand',
-        },
-      },
-      labels: {
-        style: {
-          fontFamily: 'Quicksand',
-        },
-      },
-    },
-    yaxis: [
-      {
+      xaxis: {
+        categories: processedData?.categories || [],
         title: {
-          text: 'Total Electric Cost ($)',
+          text: "Month",
           style: {
-            color: '#00A3E0',
-            fontSize: '14px',
+            colors: "#FFB366",
+            fontSize: "14px",
             fontWeight: 500,
-            fontFamily: 'Quicksand',
+            fontFamily: "Quicksand",
           },
         },
         labels: {
-          formatter: (val) => `$${val.toLocaleString()}`,
           style: {
-            colors: '#00A3E0',
-            fontFamily: 'Quicksand',
+            fontFamily: "Quicksand",
           },
         },
       },
-      {
-        opposite: true,
+      yaxis: {
         title: {
-          text: 'Supply & Delivery Costs ($)',
+          text: "Costs ($)",
           style: {
-            color: '#00A3E0',
-            fontSize: '14px',
+            color: "#00A3E0",
+            fontSize: "14px",
             fontWeight: 500,
-            fontFamily: 'Quicksand',
+            fontFamily: "Quicksand",
           },
         },
         labels: {
-          formatter: (val) => `$${val.toLocaleString()}`,
-          style: {
-            colors: '#00A3E0',
-            fontFamily: 'Quicksand',
-          },
+          formatter: (val) => `$${Number(val).toLocaleString()}`,
+          style: { colors: "#00A3E0", fontFamily: "Quicksand" },
         },
       },
-    ],
-    tooltip: {
-      shared: true,
-      intersect: false,
-      theme: 'light',
-      style: {
-        fontSize: '12px',
-        fontFamily: 'Quicksand',
-        color: '#1a202c',
-      },
-      custom: function({ series, seriesIndex, dataPointIndex, w }) {
-        const categories = w.globals.categoryLabels;
-        const month = categories[dataPointIndex];
-        
-        let tooltipContent = `
+      tooltip: {
+        shared: true,
+        intersect: false,
+        theme: "light",
+        style: {
+          fontSize: "12px",
+          fontFamily: "Quicksand",
+          color: "#1a202c",
+        },
+        custom: function ({ series, dataPointIndex, w }) {
+          const categories = w.globals.categoryLabels;
+          const month = categories[dataPointIndex];
+
+          let tooltipContent = `
           <div style="
             background: white;
             color: black;
@@ -207,13 +179,13 @@ const ChartSection: React.FC = () => {
               ${month}
             </div>
         `;
-        
-        series.forEach((seriesData, index) => {
-          const seriesName = w.globals.seriesNames[index];
-          const value = seriesData[dataPointIndex];
-          const color = w.globals.colors[index];
-          
-          tooltipContent += `
+
+          series.forEach((seriesData: number[], index: number) => {
+            const seriesName = w.globals.seriesNames[index];
+            const value = seriesData[dataPointIndex];
+            const color = w.globals.colors[index];
+
+            tooltipContent += `
             <div style="display: flex; align-items: center; margin-bottom: 4px;">
               <div style="
                 width: 8px; 
@@ -227,38 +199,77 @@ const ChartSection: React.FC = () => {
               </span>
             </div>
           `;
-        });
-        
-        tooltipContent += '</div>';
-        return tooltipContent;
-      },
-      y: {
-        formatter: (val) => `$${val.toLocaleString()}`,
-      },
-    },
-    grid: {
-      borderColor: 'rgba(0, 163, 224, 0.1)',
-      strokeDashArray: 5,
-    },
-  }), [processedData]);
+          });
 
-  const series = useMemo(() => [
-    {
-      name: 'Total Electric Cost',
-      type: 'area',
-      data: processedData?.totalElectricCost || [],
-    },
-    {
-      name: 'Total Supply Cost',
-      type: 'area',
-      data: processedData?.totalSupplyCost || [],
-    },
-    {
-      name: 'Total Delivery Cost',
-      type: 'area',
-      data: processedData?.totalDeliveryCost || [],
-    },
-  ], [processedData]);
+          tooltipContent += "</div>";
+          return tooltipContent;
+        },
+        y: {
+          formatter: (val) => `$${val.toLocaleString()}`,
+        },
+      },
+      grid: { borderColor: "rgba(0, 163, 224, 0.1)", strokeDashArray: 5 },
+    }),
+    [processedData]
+  );
+
+  const series = useMemo(
+    () => [
+      {
+        name: "Total Delivery Cost",
+        type: "bar",
+        data: processedData?.totalDeliveryCost || [],
+      },
+      {
+        name: "Total Supply Cost",
+        type: "bar",
+        data: processedData?.totalSupplyCost || [],
+      },
+    ],
+    [processedData]
+  );
+
+  const handleChartOptions: (
+    id: "demand-primary" | "energy-usage",
+    colors: string[],
+    tooltipUnit: string
+  ) => ApexOptions = useCallback(
+    (id, colors, tooltipUnit) => ({
+      chart: {
+        id,
+        toolbar: { show: false },
+        animations: { enabled: true },
+      },
+      xaxis: {
+        title: {
+          text: "Month",
+          style: {
+            fontSize: "14px",
+            fontWeight: 500,
+            fontFamily: "Quicksand",
+          },
+        },
+        categories: processedData?.categories,
+      },
+      stroke: { curve: "smooth" },
+      markers: { size: 3 },
+      yaxis: {
+        title: {
+          text: tooltipUnit,
+          style: {
+            fontSize: "14px",
+            fontWeight: 500,
+            fontFamily: "Quicksand",
+          },
+        },
+        labels: { formatter: (val: number) => `${val}` },
+      },
+      tooltip: { y: { formatter: (val: number) => `${val} ${tooltipUnit}` } },
+      colors,
+      dataLabels: { enabled: false },
+    }),
+    [processedData]
+  );
 
   if (chartLoading) {
     return (
@@ -297,16 +308,44 @@ const ChartSection: React.FC = () => {
 
   return (
     <ChartPaper elevation={1}>
-      <Typography variant="h6" gutterBottom color="primary" sx={{ fontWeight: 600, mb: 3 }}>
+      <Typography
+        variant="h6"
+        gutterBottom
+        color="primary"
+        sx={{ fontWeight: 600, mb: 3 }}
+      >
         Electric Cost Analysis
       </Typography>
-      
-      <Chart
-        options={chartOptions}
-        series={series}
-        type="line"
-        height={400}
-      />
+
+      <Chart options={chartOptions} series={series} type="bar" height={400} />
+
+      <Box mt={4}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600 }} gutterBottom>
+          Electric Demand (kW)
+        </Typography>
+        <Chart
+          options={handleChartOptions("demand-primary", ["#FF7043"], "kW")}
+          series={[
+            { name: "Demand (kW)", data: processedData.totalDemandPrimary },
+          ]}
+          type="line"
+          height={200}
+        />
+      </Box>
+
+      <Box mt={4}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600 }} gutterBottom>
+          Electric Consumption (kWh)
+        </Typography>
+        <Chart
+          options={handleChartOptions("energy-usage", ["#29B6F6"], "kWh")}
+          series={[
+            { name: "Energy (kWh)", data: processedData.totalEnergyUsage },
+          ]}
+          type="line"
+          height={200}
+        />
+      </Box>
     </ChartPaper>
   );
 };

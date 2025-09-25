@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
+import { buildUrl, QueryParams, normalizePayload } from "./apiUtils";
 
 interface ApiRequestConfig extends AxiosRequestConfig {
   token?: string;
@@ -47,7 +48,7 @@ class ApiService {
     return ApiService.instance;
   }
 
-  static async get<T = any>(
+  static async get<T = unknown>(
     url: string,
     config?: ApiRequestConfig
   ): Promise<AxiosResponse<T>> {
@@ -55,25 +56,37 @@ class ApiService {
     return instance.get<T>(url, config);
   }
 
-  static async post<T = any>(
+  static async getWithParams<T = unknown>(
     url: string,
-    data?: any,
+    params?: QueryParams,
     config?: ApiRequestConfig
   ): Promise<AxiosResponse<T>> {
     const instance = ApiService.getInstance();
-    return instance.post<T>(url, data, config);
+    const fullUrl = buildUrl(url, params);
+    return instance.get<T>(fullUrl, config);
   }
 
-  static async put<T = any>(
+  static async post<T = unknown>(
     url: string,
-    data?: any,
+    data?: unknown,
     config?: ApiRequestConfig
   ): Promise<AxiosResponse<T>> {
     const instance = ApiService.getInstance();
-    return instance.put<T>(url, data, config);
+    const safeData = data === undefined ? undefined : normalizePayload(data);
+    return instance.post<T>(url, safeData, config);
   }
 
-  static async delete<T = any>(
+  static async put<T = unknown>(
+    url: string,
+    data?: unknown,
+    config?: ApiRequestConfig
+  ): Promise<AxiosResponse<T>> {
+    const instance = ApiService.getInstance();
+    const safeData = data === undefined ? undefined : normalizePayload(data);
+    return instance.put<T>(url, safeData, config);
+  }
+
+  static async delete<T = unknown>(
     url: string,
     config?: ApiRequestConfig
   ): Promise<AxiosResponse<T>> {
@@ -81,13 +94,14 @@ class ApiService {
     return instance.delete<T>(url, config);
   }
 
-  static async patch<T = any>(
+  static async patch<T = unknown>(
     url: string,
-    data?: any,
+    data?: unknown,
     config?: ApiRequestConfig
   ): Promise<AxiosResponse<T>> {
     const instance = ApiService.getInstance();
-    return instance.patch<T>(url, data, config);
+    const safeData = data === undefined ? undefined : normalizePayload(data);
+    return instance.patch<T>(url, safeData, config);
   }
 
   static setAuthToken(token: string): void {
