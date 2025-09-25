@@ -1,21 +1,17 @@
-import { configureStore } from '@reduxjs/toolkit';
-import createSagaMiddleware from 'redux-saga';
-import { all } from 'redux-saga/effects';
-import authReducer from './slices/authSlice';
-import dashboardReducer from './slices/dashboardSlice';
-import invoicesReducer from './slices/invoicesSlice';
-import { authSaga } from './sagas/authSaga';
-import { dashboardSaga } from './sagas/dashboardSaga';
-import { invoicesSaga } from './sagas/invoicesSaga';
+import { configureStore } from "@reduxjs/toolkit";
+import createSagaMiddleware from "redux-saga";
+import { all } from "redux-saga/effects";
+import authReducer from "./slices/auth";
+import dashboardReducer from "./slices/dashboard";
+import invoicesReducer from "./slices/invoices";
+import { authSaga } from "./slices/auth/saga";
+import { dashboardSaga } from "./slices/dashboard/saga";
+import { invoicesSaga } from "./slices/invoices/saga";
 
 const sagaMiddleware = createSagaMiddleware();
 
 function* rootSaga() {
-  yield all([
-    authSaga(),
-    dashboardSaga(),
-    invoicesSaga(),
-  ]);
+  yield all([authSaga(), dashboardSaga(), invoicesSaga()]);
 }
 
 export const store = configureStore({
@@ -27,7 +23,7 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ['persist/PERSIST'],
+        ignoredActions: ["persist/PERSIST"],
       },
     }).concat(sagaMiddleware),
 });

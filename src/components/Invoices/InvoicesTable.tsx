@@ -11,15 +11,23 @@ import {
   TableRow,
   Skeleton,
   Alert,
-  Chip,
   TablePagination,
   IconButton,
   CircularProgress,
 } from "@mui/material";
 import styled from "@emotion/styled";
-import { FileText, Calendar, Building, User, Download } from "lucide-react";
+import { FileText, Calendar, Building, Download } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "../../hooks/redux";
-import { invoicesActions } from "../../store/slices/invoicesSlice";
+import { invoicesActions } from "../../store/slices/invoices";
+import {
+  selectInvoicesList,
+  selectInvoicesLoading,
+  selectInvoicesError,
+  selectTotalItems,
+  selectItemsPerPage,
+  selectSelectedClientId,
+  selectCurrentPage,
+} from "../../store/slices/invoices/selector";
 import { Invoice } from "../../types";
 
 const TablePaper = styled(Paper)`
@@ -34,7 +42,6 @@ const TablePaper = styled(Paper)`
   transition: all 0.3s ease;
 
   &:hover {
-    box-shadow: 0 8px 32px rgba(0, 163, 224, 0.12);
     border-color: rgba(0, 163, 224, 0.15);
     border-top: none;
   }
@@ -143,15 +150,13 @@ const HeaderRight = styled(Box)`
 
 const InvoicesTable: React.FC = () => {
   const dispatch = useAppDispatch();
-  const {
-    invoices,
-    invoicesLoading,
-    invoicesError,
-    selectedClientId,
-    currentPage,
-    totalItems,
-    itemsPerPage,
-  } = useAppSelector((state) => state.invoices);
+  const invoices = useAppSelector(selectInvoicesList);
+  const invoicesLoading = useAppSelector(selectInvoicesLoading);
+  const invoicesError = useAppSelector(selectInvoicesError);
+  const totalItems = useAppSelector(selectTotalItems);
+  const itemsPerPage = useAppSelector(selectItemsPerPage);
+  const selectedClientId = useAppSelector(selectSelectedClientId);
+  const currentPage = useAppSelector(selectCurrentPage);
 
   const [downloadingIds, setDownloadingIds] = React.useState<Set<string>>(
     new Set()
@@ -234,7 +239,7 @@ const InvoicesTable: React.FC = () => {
       });
     }
   };
-  const handlePageChange = (event: unknown, newPage: number) => {
+  const handlePageChange = (_event: unknown, newPage: number) => {
     const page = newPage + 1; // Material-UI uses 0-based indexing, but our API uses 1-based
     dispatch(invoicesActions.setCurrentPage(page));
     dispatch(
@@ -365,7 +370,7 @@ const InvoicesTable: React.FC = () => {
               letterSpacing: "-0.01em",
             }}
           >
-            Invoices
+            Documents
           </Typography>
         </HeaderLeft>
         <HeaderRight>
@@ -578,7 +583,7 @@ const InvoicesTable: React.FC = () => {
                         fontSize: "0.8rem",
                       }}
                     >
-                      Invoices will appear here when available
+                      Documents will appear here when available
                     </Typography>
                   </Box>
                 </TableCell>
@@ -598,7 +603,7 @@ const InvoicesTable: React.FC = () => {
             rowsPerPage={itemsPerPage}
             onRowsPerPageChange={handleRowsPerPageChange}
             rowsPerPageOptions={[5, 10, 25, 50]}
-            labelRowsPerPage="Invoices per page:"
+            labelRowsPerPage="Documents per page:"
             labelDisplayedRows={({ from, to, count }) =>
               `${from}-${to} of ${count !== -1 ? count : `more than ${to}`}`
             }

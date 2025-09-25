@@ -1,10 +1,10 @@
-import React, { useEffect } from 'react';
-import { Container, Box } from '@mui/material';
-import { useAppDispatch } from '../../hooks/redux';
-import { invoicesActions } from '../../store/slices/invoicesSlice';
-import InvoiceFilterSection from './InvoiceFilterSection';
-import InvoicesTable from './InvoicesTable';
-import InvoiceDetailModal from './InvoiceDetailModal';
+import React, { useEffect } from "react";
+import { Container } from "@mui/material";
+import { useAppDispatch } from "../../hooks/redux";
+import { invoicesActions } from "../../store/slices/invoices";
+import InvoiceFilterSection from "./InvoiceFilterSection";
+import InvoicesTable from "./InvoicesTable";
+import InvoiceDetailModal from "./InvoiceDetailModal";
 
 const InvoicesPage: React.FC = () => {
   const dispatch = useAppDispatch();

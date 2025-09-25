@@ -1,8 +1,7 @@
-import React from 'react';
+import React from "react";
 import {
   Box,
   Typography,
-  Grid,
   Paper,
   Table,
   TableBody,
@@ -11,11 +10,12 @@ import {
   TableHead,
   TableRow,
   Skeleton,
-} from '@mui/material';
-import styled from '@emotion/styled';
-import { TrendingUp, TrendingDown } from 'lucide-react';
-import { useAppSelector } from '../../hooks/redux';
-import { ClientTableData } from '../../types';
+} from "@mui/material";
+import styled from "@emotion/styled";
+import { TrendingUp, TrendingDown } from "lucide-react";
+import { useAppSelector } from "../../hooks/redux";
+import { selectDashboardTopClients } from "../../store/slices/dashboard/selector";
+import { ClientTableData } from "../../types";
 
 const TablePaper = styled(Paper)`
   padding: 20px;
@@ -24,7 +24,7 @@ const TablePaper = styled(Paper)`
   border: 1px solid rgba(0, 163, 224, 0.08);
   box-shadow: 0 4px 20px rgba(0, 163, 224, 0.06);
   transition: all 0.3s ease;
-  
+
   &:hover {
     box-shadow: 0 8px 32px rgba(0, 163, 224, 0.12);
     border-color: rgba(0, 163, 224, 0.15);
@@ -40,8 +40,8 @@ const StyledTableContainer = styled(TableContainer)`
 `;
 
 const StyledTableHead = styled(TableHead)`
-  background: linear-gradient(135deg, #00A3E0 0%, #0288D1 100%);
-  
+  background: linear-gradient(135deg, #00a3e0 0%, #0288d1 100%);
+
   & .MuiTableCell-head {
     color: #ffffff;
     font-weight: 700;
@@ -51,9 +51,9 @@ const StyledTableHead = styled(TableHead)`
     border-bottom: none;
     padding: 12px 16px;
     position: relative;
-    
+
     &:not(:last-child)::after {
-      content: '';
+      content: "";
       position: absolute;
       right: 0;
       top: 50%;
@@ -68,15 +68,15 @@ const StyledTableHead = styled(TableHead)`
 const StyledTableRow = styled(TableRow)`
   background-color: white;
   border-bottom: 1px solid rgba(0, 163, 224, 0.08);
-  
+
   &:hover {
     background-color: rgba(0, 163, 224, 0.04);
   }
-  
+
   &:last-child {
     border-bottom: none;
   }
-  
+
   & .MuiTableCell-root {
     border-bottom: none;
     padding: 12px 16px;
@@ -92,19 +92,27 @@ const RankBadge = styled(Box)<{ color: string }>`
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  background: ${props => props.color === 'success' ? 'linear-gradient(135deg, #66BB6A 0%, #4CAF50 100%)' : 'linear-gradient(135deg, #FFA726 0%, #FF9800 100%)'};
+  background: ${(props) =>
+    props.color === "success"
+      ? "linear-gradient(135deg, #66BB6A 0%, #4CAF50 100%)"
+      : "linear-gradient(135deg, #FFA726 0%, #FF9800 100%)"};
   color: white;
   font-weight: 700;
   font-size: 0.75rem;
-  box-shadow: 0 2px 8px ${props => props.color === 'success' ? 'rgba(102, 187, 106, 0.3)' : 'rgba(255, 167, 38, 0.3)'};
+  box-shadow: 0 2px 8px
+    ${(props) =>
+      props.color === "success"
+        ? "rgba(102, 187, 106, 0.3)"
+        : "rgba(255, 167, 38, 0.3)"};
 `;
 const SkeletonRow = styled(TableRow)`
   background-color: white;
   border-bottom: 1px solid rgba(0, 163, 224, 0.08);
   animation: pulse 1.5s ease-in-out infinite;
-  
+
   @keyframes pulse {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
       background-color: rgba(248, 250, 252, 0.8);
     }
@@ -113,7 +121,7 @@ const SkeletonRow = styled(TableRow)`
       background-color: rgba(226, 232, 240, 0.9);
     }
   }
-  
+
   & .MuiTableCell-root {
     border-bottom: none;
     padding: 12px 16px;
@@ -129,12 +137,12 @@ const ClientTablesSection: React.FC = () => {
     leastPayingClients,
     leastPayingClientsLoading,
     leastPayingClientsError,
-  } = useAppSelector((state) => state.dashboard);
-  
+  } = useAppSelector(selectDashboardTopClients);
+
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);
@@ -145,49 +153,49 @@ const ClientTablesSection: React.FC = () => {
       {[1, 2, 3, 4, 5].map((index) => (
         <SkeletonRow key={index}>
           <TableCell>
-            <Skeleton 
-              variant="circular" 
-              width={28} 
+            <Skeleton
+              variant="circular"
+              width={28}
               height={28}
               sx={{
-                bgcolor: 'rgba(0, 163, 224, 0.2)',
+                bgcolor: "rgba(0, 163, 224, 0.2)",
                 animation: `wave 1.6s linear ${index * 0.2}s infinite`,
               }}
             />
           </TableCell>
           <TableCell>
-            <Skeleton 
-              variant="text" 
-              width="80%" 
+            <Skeleton
+              variant="text"
+              width="80%"
               height={20}
               sx={{
-                bgcolor: 'rgba(0, 163, 224, 0.15)',
+                bgcolor: "rgba(0, 163, 224, 0.15)",
                 animation: `wave 1.6s linear ${index * 0.2 + 0.1}s infinite`,
-                borderRadius: '4px',
+                borderRadius: "4px",
               }}
             />
           </TableCell>
           <TableCell>
-            <Skeleton 
-              variant="text" 
-              width="70%" 
+            <Skeleton
+              variant="text"
+              width="70%"
               height={20}
               sx={{
-                bgcolor: 'rgba(0, 163, 224, 0.12)',
+                bgcolor: "rgba(0, 163, 224, 0.12)",
                 animation: `wave 1.6s linear ${index * 0.2 + 0.2}s infinite`,
-                borderRadius: '4px',
+                borderRadius: "4px",
               }}
             />
           </TableCell>
           <TableCell align="right">
-            <Skeleton 
-              variant="text" 
-              width="60%" 
+            <Skeleton
+              variant="text"
+              width="60%"
               height={20}
               sx={{
-                bgcolor: 'rgba(0, 163, 224, 0.18)',
+                bgcolor: "rgba(0, 163, 224, 0.18)",
                 animation: `wave 1.6s linear ${index * 0.2 + 0.3}s infinite`,
-                borderRadius: '4px',
+                borderRadius: "4px",
               }}
             />
           </TableCell>
@@ -197,24 +205,30 @@ const ClientTablesSection: React.FC = () => {
   );
 
   const renderTable = (
-    data: ClientTableData[], 
-    title: string, 
-    icon: React.ReactNode, 
-    chipColor: 'success' | 'warning',
+    data: ClientTableData[],
+    title: string,
+    icon: React.ReactNode,
+    chipColor: "success" | "warning",
     loading: boolean,
     error: string | null
   ) => (
     <TablePaper elevation={1}>
-      <Box display="flex" alignItems="center" mb={2} pb={2} borderBottom="2px solid rgba(0, 163, 224, 0.15)">
+      <Box
+        display="flex"
+        alignItems="center"
+        mb={2}
+        pb={2}
+        borderBottom="2px solid rgba(0, 163, 224, 0.15)"
+      >
         {icon}
-        <Typography 
-          variant="h6" 
-          sx={{ 
-            fontWeight: 700, 
-            fontSize: '1.1rem', 
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 700,
+            fontSize: "1.1rem",
             ml: 1,
-            color: '#00A3E0',
-            letterSpacing: '-0.02em'
+            color: "#00A3E0",
+            letterSpacing: "-0.02em",
           }}
         >
           {title}
@@ -225,10 +239,12 @@ const ClientTablesSection: React.FC = () => {
         <Table>
           <StyledTableHead>
             <TableRow>
-              <TableCell sx={{ width: '70px' }}>Rank</TableCell>
-              <TableCell sx={{ width: '35%' }}>Client Name</TableCell>
-              <TableCell sx={{ width: '25%' }}>Account Number</TableCell>
-              <TableCell align="right" sx={{ width: '20%' }}>Total Amount</TableCell>
+              <TableCell sx={{ width: "70px" }}>Rank</TableCell>
+              <TableCell sx={{ width: "35%" }}>Client Name</TableCell>
+              <TableCell sx={{ width: "25%" }}>Account Number</TableCell>
+              <TableCell align="right" sx={{ width: "20%" }}>
+                Total Amount
+              </TableCell>
             </TableRow>
           </StyledTableHead>
           <TableBody>
@@ -241,27 +257,27 @@ const ClientTablesSection: React.FC = () => {
                     sx={{
                       py: 6,
                       px: 3,
-                      backgroundColor: 'rgba(244, 67, 54, 0.03)',
+                      backgroundColor: "rgba(244, 67, 54, 0.03)",
                       borderRadius: 2,
-                      border: '2px dashed rgba(244, 67, 54, 0.15)',
+                      border: "2px dashed rgba(244, 67, 54, 0.15)",
                       margin: 2,
                     }}
                   >
-                    <Typography 
-                      variant="body1" 
-                      sx={{ 
-                        color: '#f44336',
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        color: "#f44336",
                         fontWeight: 600,
-                        fontSize: '0.9rem',
+                        fontSize: "0.9rem",
                       }}
                     >
                       Error loading data
                     </Typography>
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
-                        color: '#718096',
-                        fontSize: '0.75rem',
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: "#718096",
+                        fontSize: "0.75rem",
                         mt: 0.5,
                       }}
                     >
@@ -274,19 +290,15 @@ const ClientTablesSection: React.FC = () => {
               data.map((client, index) => (
                 <StyledTableRow key={client._id}>
                   <TableCell>
-                    <RankBadge
-                      color={chipColor}
-                    >
-                      {index + 1}
-                    </RankBadge>
+                    <RankBadge color={chipColor}>{index + 1}</RankBadge>
                   </TableCell>
                   <TableCell>
                     <Typography
                       variant="body2"
                       sx={{
                         fontWeight: 600,
-                        color: '#2d3748',
-                        fontSize: '0.875rem',
+                        color: "#2d3748",
+                        fontSize: "0.875rem",
                       }}
                     >
                       {client.name}
@@ -296,9 +308,10 @@ const ClientTablesSection: React.FC = () => {
                     <Typography
                       variant="body2"
                       sx={{
-                        color: '#718096',
-                        fontFamily: '"SF Mono", "Monaco", "Inconsolata", "Roboto Mono", monospace',
-                        fontSize: '0.8rem',
+                        color: "#718096",
+                        fontFamily:
+                          '"SF Mono", "Monaco", "Inconsolata", "Roboto Mono", monospace',
+                        fontSize: "0.8rem",
                       }}
                     >
                       {client.accountNumber}
@@ -309,8 +322,8 @@ const ClientTablesSection: React.FC = () => {
                       variant="body2"
                       sx={{
                         fontWeight: 700,
-                        color: chipColor === 'success' ? '#66BB6A' : '#FFA726',
-                        fontSize: '0.875rem',
+                        color: chipColor === "success" ? "#66BB6A" : "#FFA726",
+                        fontSize: "0.875rem",
                       }}
                     >
                       {formatCurrency(client.totalAmount)}
@@ -325,27 +338,27 @@ const ClientTablesSection: React.FC = () => {
                     sx={{
                       py: 6,
                       px: 3,
-                      backgroundColor: 'rgba(0, 163, 224, 0.03)',
+                      backgroundColor: "rgba(0, 163, 224, 0.03)",
                       borderRadius: 2,
-                      border: '2px dashed rgba(0, 163, 224, 0.15)',
+                      border: "2px dashed rgba(0, 163, 224, 0.15)",
                       margin: 2,
                     }}
                   >
-                    <Typography 
-                      variant="body1" 
-                      sx={{ 
-                        color: '#00A3E0',
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        color: "#00A3E0",
                         fontWeight: 600,
-                        fontSize: '0.9rem',
+                        fontSize: "0.9rem",
                       }}
                     >
                       No data available
                     </Typography>
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
-                        color: '#718096',
-                        fontSize: '0.75rem',
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: "#718096",
+                        fontSize: "0.75rem",
                         mt: 0.5,
                       }}
                     >
@@ -363,13 +376,13 @@ const ClientTablesSection: React.FC = () => {
 
   return (
     <Box sx={{ mt: 3 }}>
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
         <Box>
           {renderTable(
             topPayingClients || [],
-            'Top Paying Clients',
+            "Top Paying Clients",
             <TrendingUp color="#66BB6A" size={20} />,
-            'success',
+            "success",
             topPayingClientsLoading,
             topPayingClientsError
           )}
@@ -377,9 +390,9 @@ const ClientTablesSection: React.FC = () => {
         <Box>
           {renderTable(
             leastPayingClients || [],
-            'Least Paying Clients',
+            "Least Paying Clients",
             <TrendingDown color="#FFA726" size={20} />,
-            'warning',
+            "warning",
             leastPayingClientsLoading,
             leastPayingClientsError
           )}

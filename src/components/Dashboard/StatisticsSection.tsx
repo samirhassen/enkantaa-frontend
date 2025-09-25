@@ -1,13 +1,22 @@
-import React from 'react';
+import React, { useCallback } from "react";
 import {
   Box,
   Typography,
   Grid,
   Skeleton,
-} from '@mui/material';
-import styled from '@emotion/styled';
-import { DollarSign, Users, Building, FileText } from 'lucide-react';
-import { useAppSelector } from '../../hooks/redux';
+  IconButton,
+  Tooltip,
+} from "@mui/material";
+import styled from "@emotion/styled";
+import { DollarSign, Users, Building, EditIcon } from "lucide-react";
+import { useAppSelector } from "../../hooks/redux";
+import {
+  selectDashboardFilters,
+  selectDashboardStats,
+} from "../../store/slices/dashboard/selector";
+import StatFormModal from "../StatFormModal";
+import { useDispatch } from "react-redux";
+import { dashboardActions } from "../../store/slices/dashboard";
 
 const StatCard = styled(Box)`
   display: flex;
@@ -18,7 +27,7 @@ const StatCard = styled(Box)`
   border: 1px solid rgba(0, 163, 224, 0.1);
   box-shadow: 0 4px 20px rgba(0, 163, 224, 0.06);
   transition: all 0.3s ease;
-  
+
   &:hover {
     transform: translateY(-1px);
     box-shadow: 0 8px 32px rgba(0, 163, 224, 0.12);
@@ -46,9 +55,10 @@ const SkeletonCard = styled(Box)`
   border: 2px solid rgba(0, 163, 224, 0.2);
   box-shadow: 0 4px 20px rgba(0, 163, 224, 0.15);
   animation: pulse 1.5s ease-in-out infinite;
-  
+
   @keyframes pulse {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
     }
     50% {
@@ -58,53 +68,50 @@ const SkeletonCard = styled(Box)`
 `;
 
 const StatisticsSection: React.FC = () => {
-  const { statistics, statisticsLoading, statisticsError } = useAppSelector(
-    (state) => state.dashboard
-  );
+  const { statistics, statisticsLoading, statisticsError } =
+    useAppSelector(selectDashboardStats);
+  const { clientId, building } = useAppSelector(selectDashboardFilters);
+  const dispatch = useDispatch();
+
+  const [showStatFormModal, setShowStatFormModal] = React.useState(false);
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);
   };
 
-  const formatNumber = (num: number): string => {
-    return new Intl.NumberFormat('en-US').format(num);
-  };
+  // helper removed: formatNumber (not used with new statistics shape)
 
-  const getStatItems = () => [
-    {
-      title: 'Total Earned',
-      value: statistics ? formatCurrency(statistics.totalEarned) : '0',
-      icon: DollarSign,
-      color: '#66BB6A',
-      bgColor: 'rgba(102, 187, 106, 0.1)',
-    },
-    {
-      title: 'Total Clients',
-      value: statistics ? formatNumber(statistics.totalClients) : '0',
-      icon: Users,
-      color: '#FFA726',
-      bgColor: 'rgba(255, 167, 38, 0.1)',
-    },
-    {
-      title: 'Total Buildings',
-      value: statistics ? formatNumber(statistics.totalBuildings) : '0',
-      icon: Building,
-      color: '#42A5F5',
-      bgColor: 'rgba(66, 165, 245, 0.1)',
-    },
-    {
-      title: 'Total Invoices',
-      value: statistics ? formatNumber(statistics.totalInvoices) : '0',
-      icon: FileText,
-      color: '#AB47BC',
-      bgColor: 'rgba(171, 71, 188, 0.1)',
-    },
-  ];
+  const getStatItems = useCallback(
+    () => [
+      {
+        title: "Total Earnings",
+        value: statistics ? formatCurrency(statistics.totalEarnings || 0) : "0",
+        icon: DollarSign,
+        color: "#66BB6A",
+        bgColor: "rgba(102, 187, 106, 0.1)",
+      },
+      {
+        title: "Total Savings",
+        value: statistics ? formatCurrency(statistics.totalSavings || 0) : "0",
+        icon: Users,
+        color: "#FFA726",
+        bgColor: "rgba(255, 167, 38, 0.1)",
+      },
+      {
+        title: "Energy Score",
+        value: statistics ? statistics.energyScore?.toFixed(1) || "0" : "0",
+        icon: Building,
+        color: "#42A5F5",
+        bgColor: "rgba(66, 165, 245, 0.1)",
+      },
+    ],
+    [statistics]
+  );
 
   if (statisticsLoading || !statistics) {
     return (
@@ -118,10 +125,10 @@ const StatisticsSection: React.FC = () => {
                     variant="rounded"
                     width={48}
                     height={48}
-                    sx={{ 
-                      bgcolor: 'rgba(0, 163, 224, 0.2)',
-                      animation: 'wave 1.6s linear 0.5s infinite',
-                      borderRadius: '12px'
+                    sx={{
+                      bgcolor: "rgba(0, 163, 224, 0.2)",
+                      animation: "wave 1.6s linear 0.5s infinite",
+                      borderRadius: "12px",
                     }}
                   />
                 </Box>
@@ -130,21 +137,21 @@ const StatisticsSection: React.FC = () => {
                     variant="text"
                     width="70%"
                     height={28}
-                    sx={{ 
+                    sx={{
                       mb: 0.5,
-                      bgcolor: 'rgba(0, 163, 224, 0.15)',
-                      animation: 'wave 1.6s linear 0.2s infinite',
-                      borderRadius: '4px'
+                      bgcolor: "rgba(0, 163, 224, 0.15)",
+                      animation: "wave 1.6s linear 0.2s infinite",
+                      borderRadius: "4px",
                     }}
                   />
                   <Skeleton
                     variant="text"
                     width="85%"
                     height={16}
-                    sx={{ 
-                      bgcolor: 'rgba(0, 163, 224, 0.1)',
-                      animation: 'wave 1.6s linear 0.8s infinite',
-                      borderRadius: '4px'
+                    sx={{
+                      bgcolor: "rgba(0, 163, 224, 0.1)",
+                      animation: "wave 1.6s linear 0.8s infinite",
+                      borderRadius: "4px",
                     }}
                   />
                 </Box>
@@ -170,7 +177,7 @@ const StatisticsSection: React.FC = () => {
 
   return (
     <Box sx={{ mb: 3 }}>
-      <Grid container spacing={3}>
+      <Grid container alignItems="center" spacing={3}>
         {statItems.map((item, index) => {
           const IconComponent = item.icon;
           return (
@@ -181,18 +188,15 @@ const StatisticsSection: React.FC = () => {
                     backgroundColor: item.bgColor,
                   }}
                 >
-                  <IconComponent
-                    size={24}
-                    color={item.color}
-                  />
+                  <IconComponent size={24} color={item.color} />
                 </IconContainer>
                 <Box>
                   <Typography
                     variant="h5"
                     sx={{
                       fontWeight: 700,
-                      color: '#1a202c',
-                      fontSize: '1.5rem',
+                      color: "#1a202c",
+                      fontSize: "1.5rem",
                       lineHeight: 1.2,
                       mb: 0.5,
                     }}
@@ -202,9 +206,9 @@ const StatisticsSection: React.FC = () => {
                   <Typography
                     variant="body2"
                     sx={{
-                      color: '#64748b',
+                      color: "#64748b",
                       fontWeight: 500,
-                      fontSize: '0.875rem',
+                      fontSize: "0.875rem",
                     }}
                   >
                     {item.title}
@@ -214,7 +218,35 @@ const StatisticsSection: React.FC = () => {
             </Grid>
           );
         })}
+        {clientId && building && (
+          <Tooltip title="Edit">
+            <IconButton
+              onClick={() => setShowStatFormModal(true)}
+              size="small"
+              sx={{ height: "max-content", m: 2 }}
+            >
+              <EditIcon />
+            </IconButton>
+          </Tooltip>
+        )}
       </Grid>
+      <StatFormModal
+        open={showStatFormModal}
+        onClose={() => setShowStatFormModal(false)}
+        onSave={(payload) => {
+          dispatch(
+            dashboardActions.updateStatistics({
+              ...payload,
+              clientId,
+              building,
+            })
+          );
+        }}
+        initial={{
+          ...statistics,
+          energyScore: statistics.energyScore,
+        }}
+      />
     </Box>
   );
 };

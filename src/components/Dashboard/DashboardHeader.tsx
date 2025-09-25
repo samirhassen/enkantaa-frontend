@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { LogOut, BarChart3, FileText } from "lucide-react";
 import { useAppDispatch } from "../../hooks/redux";
-import { authActions } from "../../store/slices/authSlice";
+import { authActions } from "../../store/slices/auth";
 
 interface DashboardHeaderProps {
   currentPage?: "dashboard" | "invoices";
@@ -28,7 +28,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   };
 
   const handleTabChange = (
-    event: React.SyntheticEvent,
+    _event: React.SyntheticEvent,
     newValue: "dashboard" | "invoices"
   ) => {
     if (onPageChange) {
@@ -45,7 +45,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
             component="div"
             sx={{ fontWeight: 600, mr: 9 }}
           >
-            ConEdison
+            Ekaanta
           </Typography>
 
           {onPageChange && (
@@ -84,7 +84,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               />
               <Tab
                 value="invoices"
-                label="Invoices"
+                label="Documents"
                 icon={<FileText size={18} />}
                 iconPosition="start"
               />

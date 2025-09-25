@@ -4,27 +4,6 @@ export interface Client {
   accountNumber: string;
 }
 
-export interface Invoice {
-  _id: string;
-  driveFileId: string;
-  billingPeriod: {
-    startDate: string;
-    endDate: string;
-    days: number;
-  };
-  demandPrimary: number;
-  demandSupplyCost: number;
-  energyUsage: number;
-  demandDeliveryCost: number;
-  energyDeliveryCost: number;
-  systemBenefitChargeCost: number;
-  totalDeliveryCost: number;
-  totalSupplyCost: number;
-  totalElectricCost: number;
-  building: string;
-  client: string;
-}
-
 export interface LoginCredentials {
   name: string;
   password: string;
@@ -40,6 +19,8 @@ export interface AuthResponse {
 export interface ChartFilters {
   clientId: string;
   building: string;
+  startDate?: Date | null;
+  endDate?: Date | null;
 }
 
 export interface ChartDataPoint {
@@ -47,16 +28,20 @@ export interface ChartDataPoint {
   totalSupplyCostCumulative: number;
   totalDeliveryCostCumulative: number;
   totalElectricCostCumulative: number;
+  totalSupplyCost: number;
+  totalDeliveryCost: number;
+  totalElectricCost: number;
+  totalDemandPrimary: number;
+  totalEnergyUsage: number;
 }
 
 export interface Building {
   name: string;
 }
 export interface Statistics {
-  totalEarned: number;
-  totalClients: number;
-  totalBuildings: number;
-  totalInvoices: number;
+  totalEarnings?: number;
+  totalSavings?: number;
+  energyScore?: number;
 }
 
 export interface ClientTableData {
@@ -69,7 +54,6 @@ export interface ClientTableData {
 export interface PaginationParams {
   page: number;
   perPage: number;
-  clientId?: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -99,9 +83,7 @@ export interface Invoice {
     _id: string;
     name: string;
     accountNumber: string;
-    __v: number;
   };
   createdAt: string;
   updatedAt: string;
-  __v: number;
 }
