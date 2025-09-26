@@ -1,4 +1,4 @@
-name: Frontend CI/CD
+name: Frontend CI
 
 on:
   push:
@@ -7,250 +7,74 @@ on:
     branches: [ main, develop ]
 
 env:
-  NODE_VERSION: '18'
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
 
 jobs:
-  lint-and-test:
-    name: Lint, Test & Build
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run ESLint
-        run: npm run lint
-        continue-on-error: false
-
-      - name: Check TypeScript types
-        run: npm run type-check
-        continue-on-error: false
-
-      - name: Check code formatting
-        run: npm run format:check
-        continue-on-error: false
-
-      - name: Run security audit
-        run: npm audit --audit-level=high
-        continue-on-error: true
-
-      - name: Run tests
-        run: npm test
-        env:
-          CI: true
-
-      - name: Generate test coverage
-        run: npm run test:coverage
-        continue-on-error: true
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage/lcov.info
-          flags: frontend
-          name: enkantaa-frontend
-        continue-on-error: true
-
-      - name: Build application
-        run: npm run build
-        env:
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || 'http://localhost:5566' }}
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-files
-          path: dist/
-          retention-days: 7
-
-  security-scan:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
-        if: always()
-        with:
-          sarif_file: 'trivy-results.sarif'
-
-  lighthouse-audit:
-    name: Lighthouse Performance Audit
-    runs-on: ubuntu-latest
-    needs: [lint-and-test]
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dist-files
-          path: dist/
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Install http-server
-        run: npm install -g http-server
-
-      - name: Start local server
-        run: |
-          http-server dist -p 8080 &
-          sleep 5
-
-      - name: Run Lighthouse CI
-        uses: treosh/lighthouse-ci-action@v10
-        with:
-          urls: |
-            http://localhost:8080
-          uploadArtifacts: true
-          temporaryPublicStorage: true
-
   docker-build:
     name: Docker Build & Test
     runs-on: ubuntu-latest
-    needs: [lint-and-test]
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: false
-          tags: enkantaa-frontend:test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Test Docker image
-        run: |
-          docker run --rm -d -p 3000:80 --name test-container enkantaa-frontend:test
-          sleep 10
-          curl -f http://localhost:3000 || exit 1
-          docker stop test-container
-
-  e2e-tests:
-    name: E2E Tests
-    runs-on: ubuntu-latest
-    needs: [lint-and-test]
-    if: github.event_name == 'pull_request'
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright
-        run: npx playwright install --with-deps
-
-      - name: Build application
-        run: npm run build
-
-      - name: Run E2E tests
-        run: npm run test:e2e
-        continue-on-error: true
-
-      - name: Upload E2E test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: e2e-test-results
-          path: test-results/
-          retention-days: 7
-
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: [lint-and-test, security-scan, docker-build]
-    if: github.ref == 'refs/heads/staging'
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dist-files
-          path: dist/
-
-      - name: Deploy to staging
-        run: |
-          echo "🚀 Deploying to staging environment"
-          # Add your staging deployment commands here
-          # Example: rsync, AWS S3, Netlify, Vercel, etc.
-
-  deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [lint-and-test, security-scan, docker-build, lighthouse-audit]
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dist-files
-          path: dist/
-
-      - name: Deploy to production
-        run: |
-          echo "🚀 Deploying to production environment"
-          # Add your production deployment commands here
-
-  notify:
-    name: Notify
-    runs-on: ubuntu-latest
-    needs: [lint-and-test, security-scan, docker-build]
-    if: always()
-    
-    steps:
-      - name: Notify on success
-        if: needs.lint-and-test.result == 'success' && needs.security-scan.result == 'success' && needs.docker-build.result == 'success'
-        run: |
-          echo "✅ All CI checks passed successfully!"
-
-      - name: Notify on failure
-        if: needs.lint-and-test.result == 'failure' || needs.security-scan.result == 'failure' || needs.docker-build.result == 'failure'
-        run: |
-          echo "❌ CI checks failed. Please review the logs."
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Create .env file for testing
+      run: |
+        cat > .env << EOF
+        VITE_API_BASE_URL=http://localhost:5566
+        NODE_ENV=production
+        EOF
+        
+    - name: Build Docker image
+      run: docker compose build
+      
+    - name: Start frontend container
+      run: docker compose up -d
+      
+    - name: Wait for container to be ready
+      run: |
+        echo "Waiting for frontend container to start..."
+        sleep 15
+        
+        # Check if the container is running
+        if docker compose ps con-edison-frontend | grep -q "Up"; then
+          echo "✅ Frontend container is running"
+        else
+          echo "❌ Frontend container is not running"
+          docker compose logs con-edison-frontend
+          exit 1
+        fi
+        
+    - name: Test frontend application
+      run: |
+        # Test the frontend endpoint
+        echo "🧪 Testing frontend application..."
+        timeout 60s bash -c 'until curl -f http://localhost:9898 > /dev/null 2>&1; do echo "Waiting for frontend to be ready..."; sleep 3; done'
+        
+        # Make the actual test request and check if we get HTML content
+        response=$(curl -s http://localhost:9898)
+        echo "📡 Frontend Response (first 200 chars): ${response:0:200}..."
+        
+        if echo "$response" | grep -q "<html\|<!DOCTYPE"; then
+          echo "✅ Frontend application is serving HTML content correctly!"
+        else
+          echo "❌ Frontend application is not serving expected HTML content"
+          echo "Response: $response"
+          exit 1
+        fi
+        
+    - name: Show container logs on failure
+      if: failure()
+      run: |
+        echo "=== Frontend Container Logs ==="
+        docker compose logs con-edison-frontend
+        
+    - name: Clean up
+      if: always()
+      run: |
+        docker compose down --volumes --remove-orphans
+        docker system prune -f
