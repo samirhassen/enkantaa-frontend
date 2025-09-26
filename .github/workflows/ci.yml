@@ -1,0 +1,80 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [ main, develop, staging ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
+
+jobs:
+  docker-build:
+    name: Docker Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Create .env file for testing
+      run: |
+        cat > .env << EOF
+        VITE_API_BASE_URL=http://localhost:5566
+        NODE_ENV=production
+        EOF
+        
+    - name: Build Docker image
+      run: docker compose build
+      
+    - name: Start frontend container
+      run: docker compose up -d
+      
+    - name: Wait for container to be ready
+      run: |
+        echo "Waiting for frontend container to start..."
+        sleep 15
+        
+        # Check if the container is running
+        if docker compose ps con-edison-frontend | grep -q "Up"; then
+          echo "✅ Frontend container is running"
+        else
+          echo "❌ Frontend container is not running"
+          docker compose logs con-edison-frontend
+          exit 1
+        fi
+        
+    - name: Test frontend application
+      run: |
+        # Test the frontend endpoint
+        echo "🧪 Testing frontend application..."
+        timeout 60s bash -c 'until curl -f http://localhost:9898 > /dev/null 2>&1; do echo "Waiting for frontend to be ready..."; sleep 3; done'
+        
+        # Make the actual test request and check if we get HTML content
+        response=$(curl -s http://localhost:9898)
+        echo "📡 Frontend Response (first 200 chars): ${response:0:200}..."
+        
+        if echo "$response" | grep -q "<html\|<!DOCTYPE"; then
+          echo "✅ Frontend application is serving HTML content correctly!"
+        else
+          echo "❌ Frontend application is not serving expected HTML content"
+          echo "Response: $response"
+          exit 1
+        fi
+        
+    - name: Show container logs on failure
+      if: failure()
+      run: |
+        echo "=== Frontend Container Logs ==="
+        docker compose logs con-edison-frontend
+        
+    - name: Clean up
+      if: always()
+      run: |
+        docker compose down --volumes --remove-orphans
+        docker system prune -f
