@@ -11,7 +11,7 @@ class ApiService {
   private static getInstance(): AxiosInstance {
     if (!ApiService.instance) {
       const baseURL =
-        import.meta.env.VITE_API_BASE_URL || "https://behiwot.com";
+        import.meta.env.VITE_API_BASE_URL || "http://localhost:5566";
 
       ApiService.instance = axios.create({
         baseURL,
