@@ -78,3 +78,116 @@ jobs:
       run: |
         docker compose down --volumes --remove-orphans
         docker system prune -f
+
+  push-to-ghcr:
+    name: Push to GitHub Container Registry
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging')
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Extract metadata (tags, labels)
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ghcr.io/${{ github.repository }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha
+          type=raw,value=latest,enable={{is_default_branch}}
+    
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  deploy-to-digitalocean:
+    name: Deploy to Digital Ocean
+    runs-on: ubuntu-latest
+    needs: push-to-ghcr
+    # Only deploy on main branch (production)
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Upload deployment files
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.DO_DROPLET_IP }}
+        username: ${{ secrets.DO_DROPLET_USER }}
+        key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+        port: 22
+        source: "docker-compose.production.yml"
+        target: "/opt/enkantaa-frontend/"
+        strip_components: 0
+    
+    - name: Deploy to Digital Ocean Droplet
+      uses: appleboy/ssh-action@v1.0.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        IMAGE_TAG: ${{ github.ref == 'refs/heads/main' && 'latest' || github.ref_name }}
+      with:
+        host: ${{ secrets.DO_DROPLET_IP }}
+        username: ${{ secrets.DO_DROPLET_USER }}
+        key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+        port: 22
+        envs: GITHUB_TOKEN,IMAGE_TAG
+        script: |
+          # Create deployment directory
+          mkdir -p /opt/enkantaa-frontend
+          cd /opt/enkantaa-frontend
+          
+          # Create .env file from GitHub secrets
+          cat > .env << EOF
+          NODE_ENV=production
+          VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}
+          GITHUB_REPOSITORY=${{ github.repository }}
+          IMAGE_TAG=${IMAGE_TAG}
+          EOF
+          
+          # Login to GHCR
+          echo $GITHUB_TOKEN | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          
+          # Pull latest image
+          docker pull ghcr.io/${{ github.repository }}:${IMAGE_TAG}
+          
+          # Stop existing services
+          if [ -f docker-compose.production.yml ]; then
+            docker compose -f docker-compose.production.yml down
+          fi
+          
+          # Start services with new image
+          export IMAGE_TAG=${IMAGE_TAG}
+          export GITHUB_REPOSITORY=${{ github.repository }}
+          docker compose -f docker-compose.production.yml up -d
+          
+          # Clean up old images
+          docker image prune -af
+          
+          # Show status
+          docker compose -f docker-compose.production.yml ps
