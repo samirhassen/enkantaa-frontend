@@ -148,7 +148,7 @@ jobs:
         key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
         port: 22
         source: "docker-compose.production.yml"
-        target: "/opt/enkantaa-frontend/"
+        target: "/opt/enkantaa-frontend-cicd/"
         strip_components: 0
     
     - name: Deploy to Digital Ocean Droplet
@@ -164,8 +164,8 @@ jobs:
         envs: GITHUB_TOKEN,IMAGE_TAG
         script: |
           # Create deployment directory
-          mkdir -p /opt/enkantaa-frontend
-          cd /opt/enkantaa-frontend
+          mkdir -p /opt/enkantaa-frontend-cicd
+          cd /opt/enkantaa-frontend-cicd
           
           # Create .env file from GitHub secrets
           cat > .env << EOF
