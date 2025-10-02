@@ -175,8 +175,8 @@ jobs:
           IMAGE_TAG=${IMAGE_TAG}
           EOF
           
-          # Login to GHCR
-          echo $GITHUB_TOKEN | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          # Login to GHCR using Personal Access Token
+          echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           
           # Pull latest image
           docker pull ghcr.io/${{ github.repository }}:${IMAGE_TAG}
