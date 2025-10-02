@@ -83,7 +83,10 @@ jobs:
     name: Push to GitHub Container Registry
     runs-on: ubuntu-latest
     needs: docker-build
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging')
+    # TEMPORARY: Including feat/cd for testing
+    if: |
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/feat/cd')) ||
+      (github.event_name == 'pull_request' && github.head_ref == 'feat/cd')
     permissions:
       contents: read
       packages: write
@@ -128,8 +131,10 @@ jobs:
     name: Deploy to Digital Ocean
     runs-on: ubuntu-latest
     needs: push-to-ghcr
-    # Only deploy on main branch (production)
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # TEMPORARY: Including feat/cd for testing
+    if: |
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/cd')) ||
+      (github.event_name == 'pull_request' && github.head_ref == 'feat/cd')
     
     steps:
     - name: Checkout code
