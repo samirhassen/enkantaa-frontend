@@ -111,10 +111,11 @@ jobs:
       with:
         images: ghcr.io/${{ github.repository }}
         tags: |
-          type=ref,event=branch
-          type=ref,event=pr
+          type=ref,event=branch,format={{branch}},enable={{is_ref_type=='branch'}}
+          type=ref,event=pr:pr-{{number}},enable={{is_ref_type=='pull_request'}}
           type=sha
           type=raw,value=latest,enable={{is_default_branch}}
+          type=raw,value=feat-cd,enable={{branch=='feat/cd'}}
     
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
@@ -155,7 +156,7 @@ jobs:
       uses: appleboy/ssh-action@v1.0.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        IMAGE_TAG: ${{ github.ref == 'refs/heads/main' && 'latest' || github.ref_name }}
+        IMAGE_TAG: ${{ github.ref == 'refs/heads/main' && 'latest' || github.ref_name == 'feat/cd' && 'feat-cd' || github.ref_name }}
       with:
         host: ${{ secrets.DO_DROPLET_IP }}
         username: ${{ secrets.DO_DROPLET_USER }}
