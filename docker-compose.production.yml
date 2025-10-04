@@ -1,0 +1,16 @@
+services:
+  frontend:
+    image: ghcr.io/${GITHUB_REPOSITORY:-samirhassen/enkantaa-frontend}:${IMAGE_TAG:-latest}
+    container_name: enkantaa-frontend-cicd
+    restart: unless-stopped
+    ports:
+      - "9898:9898"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - frontend-network
+
+networks:
+  frontend-network:
+    driver: bridge
+
