@@ -2,7 +2,7 @@ name: Frontend CI
 
 on:
   push:
-    branches: [ main, develop, staging, feat/cd ]
+    branches: [ main, develop, staging ]
   pull_request:
     branches: [ main, develop ]
 
@@ -83,10 +83,7 @@ jobs:
     name: Push to GitHub Container Registry
     runs-on: ubuntu-latest
     needs: docker-build
-    # TEMPORARY: Including feat/cd for testing
-    if: |
-      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/feat/cd')) ||
-      (github.event_name == 'pull_request' && github.head_ref == 'feat/cd')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging')
     permissions:
       contents: read
       packages: write
@@ -97,15 +94,6 @@ jobs:
       
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
-      
-    - name: Sanitize branch name for Docker tag
-      id: sanitize
-      run: |
-        # Replace slashes with hyphens for valid Docker tags
-        BRANCH_NAME="${{ github.ref_name }}"
-        SANITIZED_TAG="${BRANCH_NAME//\//-}"
-        echo "tag=$SANITIZED_TAG" >> $GITHUB_OUTPUT
-        echo "Sanitized tag: $SANITIZED_TAG"
       
     - name: Log in to GitHub Container Registry
       uses: docker/login-action@v3
@@ -125,7 +113,6 @@ jobs:
           type=ref,event=pr
           type=sha
           type=raw,value=latest,enable={{is_default_branch}}
-          type=raw,value=${{ steps.sanitize.outputs.tag }}
     
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
@@ -144,23 +131,11 @@ jobs:
     name: Deploy to Digital Ocean
     runs-on: ubuntu-latest
     needs: push-to-ghcr
-    # TEMPORARY: Including feat/cd for testing
-    if: |
-      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/cd')) ||
-      (github.event_name == 'pull_request' && github.head_ref == 'feat/cd')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
-    - name: Sanitize branch name for Docker tag
-      id: sanitize
-      run: |
-        # Replace slashes with hyphens for valid Docker tags
-        BRANCH_NAME="${{ github.ref_name }}"
-        SANITIZED_TAG="${BRANCH_NAME//\//-}"
-        echo "tag=$SANITIZED_TAG" >> $GITHUB_OUTPUT
-        echo "Sanitized tag: $SANITIZED_TAG"
     
     - name: Upload deployment files
       uses: appleboy/scp-action@v0.1.7
@@ -177,7 +152,7 @@ jobs:
       uses: appleboy/ssh-action@v1.0.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        IMAGE_TAG: ${{ github.ref == 'refs/heads/main' && 'latest' || steps.sanitize.outputs.tag }}
+        IMAGE_TAG: latest
       with:
         host: ${{ secrets.DO_DROPLET_IP }}
         username: ${{ secrets.DO_DROPLET_USER }}
