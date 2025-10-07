@@ -57,6 +57,20 @@ const ChartSection: React.FC = () => {
       totalDeliveryCost: sortedData.map((item) =>
         Math.round(item.totalDeliveryCostCumulative)
       ),
+      // New cost breakdown for stacked chart
+      consumptionCost: sortedData.map((item) =>
+        Math.round(item.totalConsumptionCost || 0)
+      ),
+      demandCost: sortedData.map((item) =>
+        Math.round(item.totalDemandCost || 0)
+      ),
+      miscCost: sortedData.map((item) => {
+        const total = item.totalElectricCost || 0;
+        const consumption = item.totalConsumptionCost || 0;
+        const demand = item.totalDemandCost || 0;
+        console.log(item);
+        return Math.round(Math.max(0, total - consumption - demand));
+      }),
       // New series for demand and energy usage
       totalDemandPrimary: sortedData.map((item) =>
         Math.round(item.totalDemandPrimary)
@@ -72,6 +86,7 @@ const ChartSection: React.FC = () => {
       chart: {
         type: "bar",
         height: 400,
+        stacked: true,
         toolbar: {
           show: true,
           tools: {
@@ -94,7 +109,7 @@ const ChartSection: React.FC = () => {
       plotOptions: {
         bar: {
           horizontal: false,
-          columnWidth: "55%",
+          columnWidth: "70%",
           borderRadius: 6,
         },
       },
@@ -107,7 +122,7 @@ const ChartSection: React.FC = () => {
         opacity: 1,
       },
       markers: { size: 0 },
-      colors: ["#42A5F5", "#66BB6A"],
+      colors: ["#FF7043", "#42A5F5", "#66BB6A"], // Orange for Consumption, Blue for Demand, Green for Misc
       dataLabels: {
         enabled: false,
       },
@@ -138,7 +153,7 @@ const ChartSection: React.FC = () => {
       },
       yaxis: {
         title: {
-          text: "Costs ($)",
+          text: "Cost ($)",
           style: {
             color: "#00A3E0",
             fontSize: "14px",
@@ -216,14 +231,19 @@ const ChartSection: React.FC = () => {
   const series = useMemo(
     () => [
       {
-        name: "Total Delivery Cost",
+        name: "Consumption",
         type: "bar",
-        data: processedData?.totalDeliveryCost || [],
+        data: processedData?.consumptionCost || [],
       },
       {
-        name: "Total Supply Cost",
+        name: "Demand",
         type: "bar",
-        data: processedData?.totalSupplyCost || [],
+        data: processedData?.demandCost || [],
+      },
+      {
+        name: "Misc",
+        type: "bar",
+        data: processedData?.miscCost || [],
       },
     ],
     [processedData]
@@ -314,7 +334,7 @@ const ChartSection: React.FC = () => {
         color="primary"
         sx={{ fontWeight: 600, mb: 3 }}
       >
-        Electric Cost Analysis
+        Energy Cost Comparison with Variance: Jan-Apr 2024 vs 2025
       </Typography>
 
       <Chart options={chartOptions} series={series} type="bar" height={400} />

@@ -31,6 +31,8 @@ export interface ChartDataPoint {
   totalSupplyCost: number;
   totalDeliveryCost: number;
   totalElectricCost: number;
+  totalDemandCost: number;
+  totalConsumptionCost: number;
   totalDemandPrimary: number;
   totalEnergyUsage: number;
 }
